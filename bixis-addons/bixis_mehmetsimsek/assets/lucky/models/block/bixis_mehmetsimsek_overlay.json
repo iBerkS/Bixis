@@ -1,0 +1,22 @@
+{
+    "parent": "block/block",
+    "render_type": "minecraft:cutout",
+    "textures": {
+        "particle": "lucky:block/bixis_mehmetsimsek",
+        "overlay": "lucky:block/lucky_block_overlay"
+    },
+    "elements": [
+        {
+            "from": [0, 0, 0],
+            "to": [16, 16, 16],
+            "faces": {
+                "down":  { "texture": "#overlay", "cullface": "down" },
+                "up":    { "texture": "#overlay", "cullface": "up" },
+                "north": { "texture": "#overlay", "cullface": "north" },
+                "south": { "texture": "#overlay", "cullface": "south" },
+                "west":  { "texture": "#overlay", "cullface": "west" },
+                "east":  { "texture": "#overlay", "cullface": "east" }
+            }
+        }
+    ]
+}

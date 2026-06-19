@@ -1,0 +1,6 @@
+{
+    "multipart": [
+        { "apply": { "model": "lucky:block/bixis_kadikoybogasi" } },
+        { "apply": { "model": "lucky:block/bixis_kadikoybogasi_overlay" } }
+    ]
+}

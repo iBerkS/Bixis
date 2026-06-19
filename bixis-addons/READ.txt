@@ -1,0 +1,8 @@
+Yeni Lucky Block'lar eklemek isteyenler için: !bixis_kadikoybogasi'ni Template olarak kullanabilirsiniz.
+
+1- drops.txt'i editleyin. Evrensel droplar ve temaya uygun droplar ayrı yazıldı, temaya uygun dropları orijinallik için silin ve yerine kendi droplarınızı yazın.
+2- assets/lucky/textures/block içindeki lucky block resmine kendinizinkini koyun. lucky_block_overlay.png ve .mcmeta'ya dokunmayın. 
+3- Eğer bixis_kadikoybogasi tagını bozup kendinizinkini koyacaksanız (ki önerilen budur) koyduğunuz tag'ı plugin.init içinde tanıtın. Template içinde bulunmuyor ama lucky sword, lucky bow tarzı silahlar tanıtmaya karar verirseniz de aynısını yapmanız gerekir.
+	3i: Eğer özel structure eklemek isterseniz de öncelikle ekleyeceğiniz yapının .nbt dosyasını çıkarmanız lazım. Oyun içinde Structure Block size yardımcı olur. Daha sonra .nbt dosyasını structures klasörüne atıp sonra structures.txt içinde tanıtmanız gerekir. Zor değil, örnek olsun diye birkaç structure koydum.
+
+İyi Oyunlar! - iBerkS - 18.06.2026 / 14:39

@@ -1,0 +1,6 @@
+{
+    "multipart": [
+        { "apply": { "model": "lucky:block/bixis_mehmetsimsek" } },
+        { "apply": { "model": "lucky:block/bixis_mehmetsimsek_overlay" } }
+    ]
+}

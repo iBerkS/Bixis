@@ -1,0 +1,10 @@
+ID=enchanting_setup,file=enchanting_setup.nbt,centerY=1
+ID=lucky_altar_1,file=lucky_altar_1.nbt,centerY=1
+ID=lucky_altar_2,file=lucky_altar_2.nbt,centerY=1
+ID=lucky_altar_3,file=lucky_altar_3.nbt,centerY=1
+ID=lucky_altar_4,file=lucky_altar_4.nbt,centerY=1
+ID=unlucky_altar_1,file=unlucky_altar_1.nbt,centerY=1
+ID=unlucky_altar_2,file=unlucky_altar_2.nbt,centerY=1
+ID=unlucky_altar_3,file=unlucky_altar_3.nbt,centerY=1
+ID=unlucky_altar_4,file=unlucky_altar_4.nbt,centerY=1
+ID=toki,file=toki.nbt,centerY=1

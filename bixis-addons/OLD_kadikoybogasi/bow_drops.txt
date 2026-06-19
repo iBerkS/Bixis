@@ -1,0 +1,8 @@
+/ Water Bucket
+group(type=entity,ID=lucky:lucky_projectile,pos=#bowPos,NBTTag=(Motion=#bowMotion,item=(id=lucky:summer_lucky_potion),trail=(frequency=0.5,drops=["type=particle,ID=splash,posY=#bExactPosY+0.4"]),impact=["type=block,ID=water"]))@luck=0@chance=2
+
+/ Water Splash
+group(type=entity,ID=lucky:lucky_projectile,pos=#bowPos,NBTTag=(Motion=#bowMotion,item=(id=lucky:summer_lucky_potion),trail=(frequency=0.5,drops=["type=particle,ID=splash,posY=#bExactPosY+0.4"]),impact=["type=entity,ID=falling_block,amount=#rand(5,13),posOffset='#'circleOffset(#rand(1,5)),NBTTag=(BlockState=(Name=water),Fuse=50b,Motion='#'randLaunchMotion)"]))@luck=2@chance=0.25
+
+/ Warning! Guardian Inside!
+group(type=entity,ID=lucky:lucky_projectile,pos=#bowPos,NBTTag=(Motion=#bowMotion,item=(id=lucky:summer_lucky_potion),trail=(frequency=0.5,drops=["type=particle,ID=splash,posY=#bExactPosY+0.4"]),impact=["group(type=block,ID=water;type=entity,ID=#randList(guardian,guardian,guardian,guardian,guardian,guardian,guardian,guardian,guardian,elder_guardian)"]))@luck=-2@chance=0.25
