@@ -1,4 +1,0 @@
-block_id=summer_lucky_block
-sword_id=summer_lucky_sword
-bow_id=summer_lucky_bow
-potion_id=summer_lucky_potion

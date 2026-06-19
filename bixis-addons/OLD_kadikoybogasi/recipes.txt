@@ -1,2 +1,0 @@
-/ craft by placing a lucky block in the center and sunflowers around
-sss,sls,sss,s,minecraft:sunflower,l,lucky:lucky_block

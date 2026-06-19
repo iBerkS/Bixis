@@ -1,2 +1,0 @@
->minecraft:overworld
-type=block,ID=lucky:summer_lucky_block@chance=90
