@@ -1,6 +1,7 @@
 package com.bixis.bixismod.command;
 
 import com.bixis.bixismod.item.BixisItems;
+import com.bixis.bixismod.minigame.GameStateManager;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
@@ -84,6 +85,31 @@ public final class BixisCommand {
                         ));
                     }
 
+                    return 1;
+                })
+        );
+
+        root.then(
+            Commands.literal("durum")
+                .executes(ctx -> {
+                    ctx.getSource().sendSuccess(
+                        () -> Component.literal("[Bixis] Mevcut durum: "
+                            + GameStateManager.INSTANCE.getState().name()), false
+                    );
+                    return 1;
+                })
+        );
+
+        root.then(
+            Commands.literal("sifirla")
+                .requires(src -> src.hasPermission(2))
+                .executes(ctx -> {
+                    GameStateManager.INSTANCE.setState(
+                        com.bixis.bixismod.minigame.GameState.LOBI
+                    );
+                    ctx.getSource().sendSuccess(
+                        () -> Component.literal("[Bixis] Oyun LOBI'ye sıfırlandı."), true
+                    );
                     return 1;
                 })
         );

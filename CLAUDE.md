@@ -4,6 +4,8 @@
 Minecraft 1.20.1 Forge modu ve Lucky Block addon paketi.
 YouTube kanalı Bixis için üretilen karışık lucky block içeriği.
 
+> **Not — v1.0.1 Minigame Sistemi:** `MINIGAME_DESIGN.md` dosyası MUTLAKA okunmalı; tüm state machine, komut referansı ve veri mimarisi orada tanımlı.
+
 ## Teknik Stack
 - Minecraft: 1.20.1
 - Mod Loader: Forge 47.4.10
@@ -209,6 +211,16 @@ Shop trades (VER → AL):
 - 15 TL → bixis:fenerbahce_kilici (placeholder texture, diamond sword statları)
 - 3 TL → bixis:tc_pasaportu
 - 1 TL → lucky:lucky_potion x3, display: "ProteinOşın" (Lucky Block modu yüklü değilse eklenmez)
+
+## Minigame Sistemi (v1.0.1)
+
+### State Machine İskeleti
+Package: `minigame/`
+- `GameState.java` — enum: `LOBI, GERI_SAYIM, YARIS, HAZIRLIK_1, HAZIRLIK_2, KAPISMA, SONUC`
+- `GameStateManager.java` — singleton (`INSTANCE`), `getState()` / `setState(GameState)`, değişimde konsola log (`[Bixis] X -> Y`)
+- `/bixis durum` — mevcut GameState'i chat'e yazar (herkes)
+- `/bixis sifirla` — GameState'i LOBI'ye resetler (op 2)
+- Henüz geçiş tetikleyicileri yazılmadı (faz mantığı gelecek iterasyonlarda)
 
 ## Silah Sistemi
 
