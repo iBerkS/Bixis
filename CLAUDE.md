@@ -237,6 +237,38 @@ Package: `minigame/`
 - **Kit içeriği:** iron_pickaxe x1, cooked_beef x10, cobblestone x32
 - **Race Spawn Config:** `config/bixis-race-spawns.json` — `BixisRaceSpawnsConfig`; `setSpawn(teamNum, x, y, z, yaw, dimension)` anında dosyaya yazar; `/bixis admin set race <1-4>` ile kaydedilir
 
+### Admin Harita Kurulum Komutları
+Tüm komutlar `/bixis admin ...` altında, op level 2 gerektirir.
+**Config sınıfları** (package: `config/`):
+- `SpawnPoint.java` — paylaşılan record `(double x, y, z, float yaw, String dimension)` — tüm config'lerde kullanılır
+- `BixisRaceSpawnsConfig` — `config/bixis-race-spawns.json` (4 takım başlangıç noktası)
+- `BixisArenaSpawnsConfig` — `config/bixis-arena-spawns.json` (4 takım arena spawn)
+- `BixisCheckpointsConfig` — `config/bixis-checkpoints.json` (takım başına checkpoint listesi, append semantics)
+- Her üçü de: `init(configDir)`, `clearAll()`, `loadFrom(Path)` metodlarına sahip
+- `BixisArenaSpawnsConfig.parseSpawnPoint()` / `.spawnPointToJson()` — paylaşılan JSON helper (diğer config'ler de kullanır)
+
+**Komut ağacı:**
+```
+/bixis admin set race <1-4>        → oyuncu konumunu race spawn kaydeder
+/bixis admin set arena <1-4>       → oyuncu konumunu arena spawn kaydeder
+/bixis admin set checkpoint <1-4>  → oyuncu konumunu takımın CP listesine ekler (sıra no döner)
+
+/bixis admin list race             → tüm 4 takımın race spawn'larını yazar
+/bixis admin list arena            → tüm 4 takımın arena spawn'larını yazar
+/bixis admin list checkpoint <1-4> → o takımın CP listesini #1, #2, ... ile yazar
+
+/bixis admin remove checkpoint <1-4> <sira_no>  → 1-based sıra numarasıyla CP siler, listesi kaydırılır
+
+/bixis admin reset all             → tüm 3 config dosyasını temizler
+
+/bixis admin tp race <1-4>                    → admin'i race spawn'a ışınlar
+/bixis admin tp arena <1-4>                   → admin'i arena spawn'a ışınlar
+/bixis admin tp checkpoint <1-4> <sira_no>    → admin'i o CP'ye ışınlar
+
+/bixis admin loadmap <isim>        → config/maps/<isim>/{race-spawns,arena-spawns,checkpoints}.json'u aktif config'lerin üzerine kopyalar + yeniden yükler
+```
+**loadmap dizin yapısı:** `config/maps/<harita_ismi>/race-spawns.json`, `arena-spawns.json`, `checkpoints.json` — en az biri bulunmalı; eksik dosyalar atlanır.
+
 ## Silah Sistemi
 
 ### Kanama Efekti

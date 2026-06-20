@@ -15,55 +15,41 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * config/bixis-race-spawns.json dosyasından yarış başlangıç noktalarını okur/yazar.
+ * config/bixis-arena-spawns.json dosyasından arena/PVP başlangıç noktalarını okur/yazar.
  * Format: {"1": {"x":..,"y":..,"z":..,"yaw":..,"dimension":"minecraft:overworld"}, ...}
- * Bkz. MINIGAME_DESIGN.md Bölüm 5.
+ * Bkz. MINIGAME_DESIGN.md Bölüm 3.5.
  */
-public final class BixisRaceSpawnsConfig {
+public final class BixisArenaSpawnsConfig {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private static Path configFile;
     private static final Map<Integer, SpawnPoint> spawns = new HashMap<>();
 
-    /**
-     * Config dosyasını başlatır ve varsa yükler.
-     *
-     * @param configDir Forge config dizini (FMLPaths.CONFIGDIR.get())
-     */
+    /** @param configDir Forge config dizini */
     public static void init(Path configDir) {
-        configFile = configDir.resolve("bixis-race-spawns.json");
+        configFile = configDir.resolve("bixis-arena-spawns.json");
         load();
     }
 
-    /**
-     * Belirtilen takımın spawn noktasını döner.
-     *
-     * @param teamNum 1-4 arası takım numarası
-     */
+    /** @return belirtilen takımın arena spawn noktası */
     public static Optional<SpawnPoint> getSpawn(int teamNum) {
         return Optional.ofNullable(spawns.get(teamNum));
     }
 
-    /**
-     * Belirtilen takımın spawn noktasını kaydeder ve dosyaya yazar.
-     *
-     * @param teamNum 1-4 arası takım numarası
-     */
+    /** Belirtilen takımın arena spawn noktasını kaydeder ve dosyaya yazar. */
     public static void setSpawn(int teamNum, double x, double y, double z, float yaw, String dimension) {
         spawns.put(teamNum, new SpawnPoint(x, y, z, yaw, dimension));
         save();
-        BixisMod.LOGGER.info("[Bixis] Takım {} race spawn kaydedildi: {:.1f} {:.1f} {:.1f} yaw={:.1f} dim={}",
-            teamNum, x, y, z, yaw, dimension);
     }
 
-    /** Tüm race spawn noktalarını siler ve dosyayı günceller. */
+    /** Tüm arena spawn noktalarını siler ve dosyayı günceller. */
     public static void clearAll() {
         spawns.clear();
         save();
     }
 
-    /** @return tüm kayıtlı race spawn noktaları */
+    /** @return tüm kayıtlı arena spawn noktaları */
     public static Map<Integer, SpawnPoint> getAll() {
         return java.util.Collections.unmodifiableMap(spawns);
     }
@@ -84,12 +70,11 @@ public final class BixisRaceSpawnsConfig {
             for (int i = 1; i <= 4; i++) {
                 String key = String.valueOf(i);
                 if (!root.has(key)) continue;
-                JsonObject sp = root.getAsJsonObject(key);
-                spawns.put(i, BixisArenaSpawnsConfig.parseSpawnPoint(sp));
+                spawns.put(i, parseSpawnPoint(root.getAsJsonObject(key)));
             }
-            BixisMod.LOGGER.info("[Bixis] bixis-race-spawns.json yüklendi ({} takım).", spawns.size());
+            BixisMod.LOGGER.info("[Bixis] bixis-arena-spawns.json yüklendi ({} takım).", spawns.size());
         } catch (IOException e) {
-            BixisMod.LOGGER.error("[Bixis] bixis-race-spawns.json okunamadı.", e);
+            BixisMod.LOGGER.error("[Bixis] bixis-arena-spawns.json okunamadı.", e);
         }
     }
 
@@ -97,14 +82,34 @@ public final class BixisRaceSpawnsConfig {
         if (configFile == null) return;
         JsonObject root = new JsonObject();
         for (Map.Entry<Integer, SpawnPoint> entry : spawns.entrySet()) {
-            root.add(String.valueOf(entry.getKey()), BixisArenaSpawnsConfig.spawnPointToJson(entry.getValue()));
+            root.add(String.valueOf(entry.getKey()), spawnPointToJson(entry.getValue()));
         }
         try (Writer w = Files.newBufferedWriter(configFile)) {
             GSON.toJson(root, w);
         } catch (IOException e) {
-            BixisMod.LOGGER.error("[Bixis] bixis-race-spawns.json yazılamadı.", e);
+            BixisMod.LOGGER.error("[Bixis] bixis-arena-spawns.json yazılamadı.", e);
         }
     }
 
-    private BixisRaceSpawnsConfig() {}
+    static SpawnPoint parseSpawnPoint(JsonObject obj) {
+        return new SpawnPoint(
+            obj.get("x").getAsDouble(),
+            obj.get("y").getAsDouble(),
+            obj.get("z").getAsDouble(),
+            obj.get("yaw").getAsFloat(),
+            obj.has("dimension") ? obj.get("dimension").getAsString() : "minecraft:overworld"
+        );
+    }
+
+    static JsonObject spawnPointToJson(SpawnPoint sp) {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("x", sp.x());
+        obj.addProperty("y", sp.y());
+        obj.addProperty("z", sp.z());
+        obj.addProperty("yaw", sp.yaw());
+        obj.addProperty("dimension", sp.dimension());
+        return obj;
+    }
+
+    private BixisArenaSpawnsConfig() {}
 }
