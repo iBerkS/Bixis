@@ -144,7 +144,9 @@ Base: `mob/HoliganEntity.java` extends `Monster` | Alt sınıflar: `FenerbahceHo
 - Spawn egg renkleri: FB lacivert+sarı, GS kırmızı+sarı, BJK siyah+beyaz, TS bordo+mavi
 - Spawn egg model JSON: `assets/bixis/models/item/holigan_*_spawn_egg.json` — parent: `item/template_spawn_egg`
 - Ses kayıtları: `holigan_aggro`, `holigan_fenerbahce_spawn`, `holigan_galatasaray_spawn`, `holigan_besiktas_spawn`
-- JVM JIT crash fix (build.gradle): `-XX:CompileCommand=exclude,net/minecraft/client/model/HumanoidModel,setupAnim` — HumanoidModel kullanan mob renderer'larda C2 compiler crash'ini önler
+- JVM JIT crash fix (build.gradle): C2 compiler belirli metodları native'e çevirirken EXCEPTION_ACCESS_VIOLATION ile çöküyor; etkilenen metodlar `jvmArg -XX:CompileCommand=exclude,...` ile devre dışı bırakılır:
+  - `net/minecraft/client/model/HumanoidModel,setupAnim` — HumanoidModel renderer crash'i
+  - `net/minecraft/world/level/entity/EntitySection,getEntities` — entity tick crash'i (hs_err_pid34152)
 
 ### Hırt
 Registry: `bixis:hirt` | Class: `mob/HirtEntity.java` | extends `Monster`
@@ -219,8 +221,18 @@ Package: `minigame/`
 - `GameState.java` — enum: `LOBI, GERI_SAYIM, YARIS, HAZIRLIK_1, HAZIRLIK_2, KAPISMA, SONUC`
 - `GameStateManager.java` — singleton (`INSTANCE`), `getState()` / `setState(GameState)`, değişimde konsola log (`[Bixis] X -> Y`)
 - `/bixis durum` — mevcut GameState'i chat'e yazar (herkes)
-- `/bixis sifirla` — GameState'i LOBI'ye resetler (op 2)
+- `/bixis sifirla` — GameState'i LOBI'ye resetler (op 2) + LobbyManager.reset() çağırır
 - Henüz geçiş tetikleyicileri yazılmadı (faz mantığı gelecek iterasyonlarda)
+
+### Lobi Fazı
+`LobbyManager.java` — `@Mod.EventBusSubscriber` singleton, MinecraftForge event bus'a otomatik kayıtlı
+- **Scoreboard takımları:** `bixis_team1`–`bixis_team4`, renkler: RED/GREEN/YELLOW/BLUE; sunucu başlangıcı ve `/bixis sifirla`'da yeniden oluşturulur, üyeler temizlenir
+- **Ready flags:** `boolean[4]` — takım üyesi eklenince/çıkınca ilgili takım flag'i false'a döner
+- `/bixis takimsec <1-4>` — GameState LOBI değilse hata; oyuncu zaten o takımdaysa "Zaten X. takımdasın!" hata sesi; aksi halde eski takımdan çıkarır, yeni takıma ekler, her iki takımın flag'ini sıfırlar
+- `/bixis hazir <1-4>` — oyuncu o takımda değilse hata; `readyFlags[i] = true`; tüm sunucuya takım renginde broadcast; tüm dolu takımlar hazırsa konsola log
+- **Sidebar scoreboard:** `bixis_lobby` objective, her 20 tick'te güncellenir; sadece LOBI fazında görünür, diğer fazlarda kaldırılır; satır formatı: `"§X Takım N: M oyuncu - DURUM"` (DURUM: `✔` hazır, `✘` bekliyor, `-` üye yok)
+- **Sesler:** başarı → `SoundEvents.UI_BUTTON_CLICK` (playNotifySound); hata → `SoundEvents.VILLAGER_NO`; LOBI dışı komut hatası da hata sesi çalar
+- **Hata mesajı formatı:** tüm hata/uyarı mesajları `ChatFormatting.DARK_RED` + `⚠` öneki; başarı mesajları takım rengiyle kalsın
 
 ## Silah Sistemi
 

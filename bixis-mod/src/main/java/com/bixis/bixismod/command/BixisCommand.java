@@ -1,8 +1,11 @@
 package com.bixis.bixismod.command;
 
 import com.bixis.bixismod.item.BixisItems;
+import com.bixis.bixismod.minigame.GameState;
 import com.bixis.bixismod.minigame.GameStateManager;
+import com.bixis.bixismod.minigame.LobbyManager;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -104,14 +107,47 @@ public final class BixisCommand {
             Commands.literal("sifirla")
                 .requires(src -> src.hasPermission(2))
                 .executes(ctx -> {
-                    GameStateManager.INSTANCE.setState(
-                        com.bixis.bixismod.minigame.GameState.LOBI
-                    );
+                    GameStateManager.INSTANCE.setState(GameState.LOBI);
+                    LobbyManager.INSTANCE.reset(ctx.getSource().getServer());
                     ctx.getSource().sendSuccess(
                         () -> Component.literal("[Bixis] Oyun LOBI'ye sıfırlandı."), true
                     );
                     return 1;
                 })
+        );
+
+        root.then(
+            Commands.literal("takimsec")
+                .then(Commands.argument("takim", IntegerArgumentType.integer(1, 4))
+                    .executes(ctx -> {
+                        if (GameStateManager.INSTANCE.getState() != GameState.LOBI) {
+                            ctx.getSource().sendFailure(Component.literal("⚠ Oyun zaten başladı.").withStyle(net.minecraft.ChatFormatting.DARK_RED));
+                            ServerPlayer ep = ctx.getSource().getPlayer();
+                            if (ep != null) LobbyManager.playError(ep);
+                            return 0;
+                        }
+                        ServerPlayer player = ctx.getSource().getPlayerOrException();
+                        int takim = IntegerArgumentType.getInteger(ctx, "takim");
+                        LobbyManager.INSTANCE.joinTeam(player, takim);
+                        return 1;
+                    }))
+        );
+
+        root.then(
+            Commands.literal("hazir")
+                .then(Commands.argument("takim", IntegerArgumentType.integer(1, 4))
+                    .executes(ctx -> {
+                        if (GameStateManager.INSTANCE.getState() != GameState.LOBI) {
+                            ctx.getSource().sendFailure(Component.literal("⚠ Oyun zaten başladı.").withStyle(net.minecraft.ChatFormatting.DARK_RED));
+                            ServerPlayer ep = ctx.getSource().getPlayer();
+                            if (ep != null) LobbyManager.playError(ep);
+                            return 0;
+                        }
+                        ServerPlayer player = ctx.getSource().getPlayerOrException();
+                        int takim = IntegerArgumentType.getInteger(ctx, "takim");
+                        LobbyManager.INSTANCE.setReady(player, takim);
+                        return 1;
+                    }))
         );
 
         dispatcher.register(root);

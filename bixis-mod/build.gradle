@@ -27,6 +27,8 @@ minecraft {
             jvmArg '-Dmixin.env.disableRefMap=true'
             // HumanoidModel::setupAnim JIT crash'ini önler (C2 compiler bug)
             jvmArg '-XX:CompileCommand=exclude,net/minecraft/client/model/HumanoidModel,setupAnim'
+            // EntitySection::getEntities JIT crash'ini önler (C2 compiler bug, hs_err_pid34152)
+            jvmArg '-XX:CompileCommand=exclude,net/minecraft/world/level/entity/EntitySection,getEntities'
             mods { bixis { source sourceSets.main } }
         }
 

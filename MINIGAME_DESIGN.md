@@ -265,11 +265,8 @@ Tüm açık kararlar netleşti:
   | 1 | Kırmızı | `&c` |
   | 2 | Yeşil | `&a` |
   | 3 | Sarı | `&e` |
-  | 4 | Koyu Mavi | `&1` |
+  | 4 | Koyu Mavi | `&9` |
 
-  > Takım 4 için `&1` (Dark Blue) seçildi çünkü `blue_concrete`
-  > bloğunun rengiyle (lacivert) birebir eşleşiyor — `&9`/`&b` daha
-  > açık tonlar olduğu için blokla uyuşmuyordu.
 
 **Önceden kesinleşen kararlar:**
 
