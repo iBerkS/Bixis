@@ -1,5 +1,6 @@
 package com.bixis.bixismod.command;
 
+import com.bixis.bixismod.config.BixisRaceSpawnsConfig;
 import com.bixis.bixismod.item.BixisItems;
 import com.bixis.bixismod.minigame.GameState;
 import com.bixis.bixismod.minigame.GameStateManager;
@@ -148,6 +149,54 @@ public final class BixisCommand {
                         LobbyManager.INSTANCE.setReady(player, takim);
                         return 1;
                     }))
+        );
+
+        root.then(
+            Commands.literal("basla")
+                .requires(src -> src.hasPermission(2))
+                .executes(ctx -> {
+                    if (GameStateManager.INSTANCE.getState() != GameState.LOBI) {
+                        ctx.getSource().sendFailure(
+                            Component.literal("⚠ Oyun LOBI fazında değil.")
+                                .withStyle(net.minecraft.ChatFormatting.DARK_RED));
+                        return 0;
+                    }
+                    MinecraftServer srv = ctx.getSource().getServer();
+                    if (!LobbyManager.INSTANCE.allReadyCheck(srv)) {
+                        ctx.getSource().sendFailure(
+                            Component.literal("⚠ Tüm takımlar hazır değil!")
+                                .withStyle(net.minecraft.ChatFormatting.DARK_RED));
+                        return 0;
+                    }
+                    GameStateManager.INSTANCE.setState(GameState.GERI_SAYIM);
+                    LobbyManager.INSTANCE.startCountdown(srv);
+                    ctx.getSource().sendSuccess(
+                        () -> Component.literal("[Bixis] Geri sayım başladı!"), true);
+                    return 1;
+                })
+        );
+
+        root.then(
+            Commands.literal("admin")
+                .requires(src -> src.hasPermission(2))
+                .then(Commands.literal("set")
+                    .then(Commands.literal("race")
+                        .then(Commands.argument("takim", IntegerArgumentType.integer(1, 4))
+                            .executes(ctx -> {
+                                ServerPlayer player = ctx.getSource().getPlayerOrException();
+                                int takim = IntegerArgumentType.getInteger(ctx, "takim");
+                                double x = player.getX();
+                                double y = player.getY();
+                                double z = player.getZ();
+                                float yaw = player.getYRot();
+                                String dim = player.level().dimension().location().toString();
+                                BixisRaceSpawnsConfig.setSpawn(takim, x, y, z, yaw, dim);
+                                ctx.getSource().sendSuccess(
+                                    () -> Component.literal(String.format(
+                                        "[Bixis] Takım %d race spawn kaydedildi: %.1f %.1f %.1f (yaw:%.1f) [%s]",
+                                        takim, x, y, z, yaw, dim)), true);
+                                return 1;
+                            }))))
         );
 
         dispatcher.register(root);

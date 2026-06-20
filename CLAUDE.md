@@ -222,7 +222,7 @@ Package: `minigame/`
 - `GameStateManager.java` — singleton (`INSTANCE`), `getState()` / `setState(GameState)`, değişimde konsola log (`[Bixis] X -> Y`)
 - `/bixis durum` — mevcut GameState'i chat'e yazar (herkes)
 - `/bixis sifirla` — GameState'i LOBI'ye resetler (op 2) + LobbyManager.reset() çağırır
-- Henüz geçiş tetikleyicileri yazılmadı (faz mantığı gelecek iterasyonlarda)
+- `/bixis basla` — GameState LOBI + tüm dolu takımlar hazır olmalı; geçer → GERI_SAYIM + `LobbyManager.startCountdown()`
 
 ### Lobi Fazı
 `LobbyManager.java` — `@Mod.EventBusSubscriber` singleton, MinecraftForge event bus'a otomatik kayıtlı
@@ -233,6 +233,9 @@ Package: `minigame/`
 - **Sidebar scoreboard:** `bixis_lobby` objective, her 20 tick'te güncellenir; sadece LOBI fazında görünür, diğer fazlarda kaldırılır; satır formatı: `"§X Takım N: M oyuncu - DURUM"` (DURUM: `✔` hazır, `✘` bekliyor, `-` üye yok)
 - **Sesler:** başarı → `SoundEvents.UI_BUTTON_CLICK` (playNotifySound); hata → `SoundEvents.VILLAGER_NO`; LOBI dışı komut hatası da hata sesi çalar
 - **Hata mesajı formatı:** tüm hata/uyarı mesajları `ChatFormatting.DARK_RED` + `⚠` öneki; başarı mesajları takım rengiyle kalsın
+- **Geri Sayım fazı:** `LobbyManager.startCountdown()` → `ServerTickEvent` ile tick 0/20/40'ta title "3/2/1", tick 60'ta ışınlama+kit+ses+title "YARIŞ BAŞLADI!" ve YARIS state'ine geçiş; spawn ayarlanmamış takımlar ışınlanmaz, konsola warn; 3/2/1'de `UI_BUTTON_CLICK` tik sesi çalar
+- **Kit içeriği:** iron_pickaxe x1, cooked_beef x10, cobblestone x32
+- **Race Spawn Config:** `config/bixis-race-spawns.json` — `BixisRaceSpawnsConfig`; `setSpawn(teamNum, x, y, z, yaw, dimension)` anında dosyaya yazar; `/bixis admin set race <1-4>` ile kaydedilir
 
 ## Silah Sistemi
 

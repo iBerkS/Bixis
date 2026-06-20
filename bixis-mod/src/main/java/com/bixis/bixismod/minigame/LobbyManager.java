@@ -9,9 +9,21 @@ import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.scores.Score;
 import net.minecraft.world.scores.Scoreboard;
 import net.minecraft.world.scores.criteria.ObjectiveCriteria;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.Level;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraftforge.event.server.ServerStartedEvent;
+
+import java.util.List;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.server.ServerLifecycleHooks;
@@ -45,6 +57,9 @@ public final class LobbyManager {
     private int tickCounter = 0;
     private boolean sidebarVisible = false;
 
+    // Geri sayım: -1 = pasif, 0+ = aktif (tick sayacı)
+    private int countdownTick = -1;
+
     private LobbyManager() {}
 
     // ────────────────────────────────────────────────────────
@@ -74,6 +89,33 @@ public final class LobbyManager {
         java.util.Arrays.fill(readyFlags, false);
         setupTeams(server);
         updateSidebar(server);
+    }
+
+    /**
+     * Tüm dolu takımlar hazır mı? /bixis basla kontrolü için kullanılır.
+     *
+     * @return true yalnızca en az bir dolu takım varsa VE hepsi hazırsa
+     */
+    public boolean allReadyCheck(MinecraftServer server) {
+        Scoreboard sb = server.getScoreboard();
+        boolean anyTeam = false;
+        for (int i = 0; i < 4; i++) {
+            PlayerTeam team = sb.getPlayerTeam(TEAM_IDS[i]);
+            int count = (team != null) ? team.getPlayers().size() : 0;
+            if (count > 0) {
+                anyTeam = true;
+                if (!readyFlags[i]) return false;
+            }
+        }
+        return anyTeam;
+    }
+
+    /**
+     * Geri sayım sekansını başlatır. GameState GERI_SAYIM olarak
+     * ayarlandıktan sonra çağrılmalı.
+     */
+    public void startCountdown(MinecraftServer server) {
+        countdownTick = 0;
     }
 
     /**
@@ -155,16 +197,99 @@ public final class LobbyManager {
     // ────────────────────────────────────────────────────────
 
     private void tick() {
-        if (++tickCounter < 20) return;
-        tickCounter = 0;
-
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) return;
+
+        // Geri sayım sekansı (tick-hassas)
+        if (countdownTick >= 0) {
+            tickCountdown(server);
+            if (countdownTick >= 0) countdownTick++; // -1 atandıysa (sekans bitti) artırma
+        }
+
+        // Sidebar güncellemesi (her 20 tick)
+        if (++tickCounter < 20) return;
+        tickCounter = 0;
 
         if (GameStateManager.INSTANCE.getState() == GameState.LOBI) {
             updateSidebar(server);
         } else if (sidebarVisible) {
             hideSidebar(server);
+        }
+    }
+
+    private void tickCountdown(MinecraftServer server) {
+        List<ServerPlayer> players = server.getPlayerList().getPlayers();
+
+        if (countdownTick == 0) {
+            sendTitleAll(players, "3", ChatFormatting.YELLOW);
+            playTickSound(players);
+        } else if (countdownTick == 20) {
+            sendTitleAll(players, "2", ChatFormatting.YELLOW);
+            playTickSound(players);
+        } else if (countdownTick == 40) {
+            sendTitleAll(players, "1", ChatFormatting.RED);
+            playTickSound(players);
+        } else if (countdownTick == 60) {
+            teleportAndKit(server, players);
+            sendStartTitle(players);
+            for (ServerPlayer p : players) {
+                p.playNotifySound(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.MASTER, 1.0f, 1.0f);
+            }
+            GameStateManager.INSTANCE.setState(GameState.YARIS);
+            countdownTick = -1; // sekans bitti, bir daha artırılmasın
+        }
+    }
+
+    private void teleportAndKit(MinecraftServer server, List<ServerPlayer> players) {
+        Scoreboard sb = server.getScoreboard();
+        for (ServerPlayer player : players) {
+            PlayerTeam team = sb.getPlayersTeam(player.getScoreboardName());
+            if (team == null) continue;
+            int idx = teamIndex(team.getName());
+            if (idx < 0) continue;
+            int teamNum = idx + 1;
+
+            var spawnOpt = com.bixis.bixismod.config.BixisRaceSpawnsConfig.getSpawn(teamNum);
+            if (spawnOpt.isEmpty()) {
+                LOGGER.warn("[Bixis] Takım {} için race spawn ayarlanmamış, {} ışınlanmıyor.",
+                    teamNum, player.getName().getString());
+                continue;
+            }
+            var sp = spawnOpt.get();
+            ResourceKey<Level> dimKey = ResourceKey.create(Registries.DIMENSION,
+                new ResourceLocation(sp.dimension()));
+            ServerLevel level = server.getLevel(dimKey);
+            if (level == null) {
+                LOGGER.warn("[Bixis] Dimension '{}' bulunamadı, takım {} ışınlanmıyor.",
+                    sp.dimension(), teamNum);
+                continue;
+            }
+            player.teleportTo(level, sp.x(), sp.y(), sp.z(), sp.yaw(), 0f);
+            giveKit(player);
+        }
+    }
+
+    private static void giveKit(ServerPlayer player) {
+        player.getInventory().add(new ItemStack(Items.IRON_PICKAXE, 1));
+        player.getInventory().add(new ItemStack(Items.COOKED_BEEF, 10));
+        player.getInventory().add(new ItemStack(Items.COBBLESTONE, 32));
+    }
+
+    private static void sendTitleAll(List<ServerPlayer> players, String text, ChatFormatting color) {
+        Component title = Component.literal(text).withStyle(color, ChatFormatting.BOLD);
+        for (ServerPlayer p : players) {
+            p.connection.send(new ClientboundSetTitlesAnimationPacket(5, 10, 5));
+            p.connection.send(new ClientboundSetTitleTextPacket(title));
+        }
+    }
+
+    private static void sendStartTitle(List<ServerPlayer> players) {
+        Component title    = Component.literal("YARIŞ BAŞLADI!").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD);
+        Component subtitle = Component.literal("Bol şans!").withStyle(ChatFormatting.YELLOW);
+        for (ServerPlayer p : players) {
+            p.connection.send(new ClientboundSetTitlesAnimationPacket(10, 40, 20));
+            p.connection.send(new ClientboundSetTitleTextPacket(title));
+            p.connection.send(new ClientboundSetSubtitleTextPacket(subtitle));
         }
     }
 
@@ -246,6 +371,13 @@ public final class LobbyManager {
 
         if (anyTeam && allReady) {
             LOGGER.info("[Bixis] Tüm takımlar hazır, /bixis basla kullanılabilir");
+        }
+    }
+
+    /** Geri sayım tik sesi — 3/2/1 title'larında. */
+    private static void playTickSound(List<ServerPlayer> players) {
+        for (ServerPlayer p : players) {
+            p.playNotifySound(SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.MASTER, 1.0f, 1.0f);
         }
     }
 
