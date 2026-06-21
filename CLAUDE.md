@@ -221,8 +221,11 @@ Package: `minigame/`
 - `GameState.java` — enum: `LOBI, GERI_SAYIM, YARIS, HAZIRLIK_1, HAZIRLIK_2, KAPISMA, SONUC`
 - `GameStateManager.java` — singleton (`INSTANCE`), `getState()` / `setState(GameState)`, değişimde konsola log (`[Bixis] X -> Y`)
 - `/bixis durum` — mevcut GameState'i chat'e yazar (herkes)
+- `/bixis help` — tüm komutları kategorili olarak chat'e listeler (herkes)
 - `/bixis sifirla` — GameState'i LOBI'ye resetler (op 2) + LobbyManager.reset() çağırır
 - `/bixis basla` — GameState LOBI + tüm dolu takımlar hazır olmalı; geçer → GERI_SAYIM + `LobbyManager.startCountdown()`
+- `/bixis luckyevents vergizamani` — vergi zamanı eventi (op 2); drops.txt'te `type=command,ID="/bixis luckyevents vergizamani"` ile tetiklenir
+- **TODO:** `bixis-addons/` içindeki tüm drops.txt dosyaları hâlâ `/bixis vergizamani` çağırıyor — bu komut kaldırıldı, `/bixis luckyevents vergizamani` olarak güncellenmeli (bixis_mehmetsimsek addon'u dahil)
 
 ### Lobi Fazı
 `LobbyManager.java` — `@Mod.EventBusSubscriber` singleton, MinecraftForge event bus'a otomatik kayıtlı
@@ -233,7 +236,7 @@ Package: `minigame/`
 - **Sidebar scoreboard:** `bixis_lobby` objective, her 20 tick'te güncellenir; sadece LOBI fazında görünür, diğer fazlarda kaldırılır; satır formatı: `"§X Takım N: M oyuncu - DURUM"` (DURUM: `✔` hazır, `✘` bekliyor, `-` üye yok)
 - **Sesler:** başarı → `SoundEvents.UI_BUTTON_CLICK` (playNotifySound); hata → `SoundEvents.VILLAGER_NO`; LOBI dışı komut hatası da hata sesi çalar
 - **Hata mesajı formatı:** tüm hata/uyarı mesajları `ChatFormatting.DARK_RED` + `⚠` öneki; başarı mesajları takım rengiyle kalsın
-- **Geri Sayım fazı:** `LobbyManager.startCountdown()` → `ServerTickEvent` ile tick 0/20/40'ta title "3/2/1", tick 60'ta ışınlama+kit+ses+title "YARIŞ BAŞLADI!" ve YARIS state'ine geçiş; spawn ayarlanmamış takımlar ışınlanmaz, konsola warn; 3/2/1'de `UI_BUTTON_CLICK` tik sesi çalar
+- **Geri Sayım fazı:** `LobbyManager.startCountdown()` → `ServerTickEvent` ile tick 0/20/40'ta title "3/2/1", tick 60'ta ışınlama + **Survival modu** + kit + ses + title "YARIŞ BAŞLADI!" ve YARIS state'ine geçiş; spawn ayarlanmamış takımlar ışınlanmaz, konsola warn; 3/2/1'de `UI_BUTTON_CLICK` tik sesi çalar
 - **Kit içeriği:** iron_pickaxe x1, cooked_beef x10, cobblestone x32
 - **Race Spawn Config:** `config/bixis-race-spawns.json` — `BixisRaceSpawnsConfig`; `setSpawn(teamNum, x, y, z, yaw, dimension)` anında dosyaya yazar; `/bixis admin set race <1-4>` ile kaydedilir
 
@@ -258,7 +261,7 @@ Package: `minigame/`
 - **`startFight(server)`** — `/bixis kapisma_basla` çağrıldığında; arena'ya re-ışınla + fightCountdownTick=0
 - **Countdown (3-2-1):** tick 0'da her oyuncunun konumu `frozenPositions`/`frozenLevels`'a kaydedilir; her tick `freezeAllPlayers()` çağrılır; tick 60'ta "BAŞLA!" title+subtitle + NOTE_BLOCK_PLING sesi; `pvpTimerTick=0`; GameState → KAPISMA; `playTickSound(players, pitch)` — "3"=0.8f, "2"=1.0f, "1"=1.2f
 - **K/D takibi:** `LivingDeathEvent` KAPISMA fazında; dead instanceof ServerPlayer → `pvpDeathCount+1`; killer instanceof ServerPlayer (dead bloğu içinde) → `pvpKillCount+1`; mob ölümlerinde kill sayılmaz; `pvpTimerTick < 0` ise hiçbiri sayılmaz
-- **Arena respawn:** HAZIRLIK_2 ve KAPISMA fazlarında `PlayerRespawnEvent` → `pendingArenaRespawn` set'ine ekler; sonraki tick `processPendingRespawns()` → takımın arena spawn'ına ışınlar
+- **Arena respawn:** HAZIRLIK_2 ve KAPISMA fazlarında `PlayerRespawnEvent` → `pendingArenaRespawn` set'ine ekler; sonraki tick `processPendingRespawns()` → takımın arena spawn'ına ışınlar; tick guard `pendingArenaRespawn.isEmpty()` kontrolü içerir (HAZIRLIK_2'de countdown/pvp timer çalışmıyor olsa bile respawn işlenir)
 - **PVP timer:** pvpTimerTick saniyede bir artar; süre dolunca → `endFight()`: "KAPIŞMA BİTTİ!" title + BELL sesi + GameState → SONUC + chat'e yarış sonuçları + kapışma istatistikleri
 - **KAPIŞMA sidebar (bixis_arena obj):** saniyede bir güncellenir; kalan süre "MM:SS" + ayraç + her oyuncu için "TakımRengi Name: 2K / 1D" (kill sayısına göre sıralı)
 - **SONUÇ chat:** `endFight()` → `RaceManager.INSTANCE.printRaceResults(server)` + `printFightStats(server)`; format: "N. Oyuncu - mm:ss.cs - D Ölüm" / "Oyuncu - Bitirmedi - D Ölüm"; kapışma: "Oyuncu: N Öldürme / N Ölüm"

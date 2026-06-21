@@ -85,7 +85,8 @@ public final class ArenaManager {
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        if (INSTANCE.fightCountdownTick < 0 && INSTANCE.pvpTimerTick < 0) return;
+        if (INSTANCE.fightCountdownTick < 0 && INSTANCE.pvpTimerTick < 0
+                && INSTANCE.pendingArenaRespawn.isEmpty()) return;
         INSTANCE.tick();
     }
 

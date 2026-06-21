@@ -33,6 +33,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 
 import java.io.IOException;
@@ -67,46 +68,7 @@ public final class BixisCommand {
                 })
         );
 
-        root.then(
-            Commands.literal("vergizamani")
-                .requires(src -> src.hasPermission(2))
-                .executes(ctx -> {
-                    MinecraftServer server = ctx.getSource().getServer();
-                    List<ServerPlayer> players = server.getPlayerList().getPlayers();
-
-                    Component title = Component.literal("VERGİ ZAMANI")
-                        .withStyle(style -> style.withBold(true).withColor(ChatFormatting.RED));
-                    for (ServerPlayer player : players) {
-                        player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket(10, 70, 20));
-                        player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket(title));
-                    }
-
-                    List<Component> logLines = new ArrayList<>();
-                    for (ServerPlayer player : players) {
-                        int amount = 5 + player.getRandom().nextInt(21);
-                        int removed = removeItems(player, amount);
-                        logLines.add(Component.literal(
-                            player.getName().getString() + " — " + removed + " TL alındı.")
-                            .withStyle(Style.EMPTY.withColor(ChatFormatting.GRAY).withItalic(true)));
-                    }
-
-                    Component mainMsg = Component.literal("Maliye Bakanlığı vergi tahsilatı gerçekleştirdi.")
-                        .withStyle(Style.EMPTY.withColor(ChatFormatting.GRAY).withItalic(true));
-                    for (ServerPlayer player : players) {
-                        player.sendSystemMessage(mainMsg);
-                        for (Component line : logLines) player.sendSystemMessage(line);
-                    }
-
-                    for (ServerPlayer player : players) {
-                        player.connection.send(new ClientboundSoundPacket(
-                            net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT.wrapAsHolder(SoundEvents.WITHER_SPAWN),
-                            SoundSource.MASTER,
-                            player.getX(), player.getY(), player.getZ(),
-                            1.0f, 1.0f, player.getRandom().nextLong()));
-                    }
-                    return 1;
-                })
-        );
+        root.then(buildLuckyEventsNode());
 
         root.then(
             Commands.literal("durum")
@@ -134,13 +96,16 @@ public final class BixisCommand {
             Commands.literal("takimsec")
                 .then(Commands.argument("takim", IntegerArgumentType.integer(1, 4))
                     .executes(ctx -> {
-                        if (GameStateManager.INSTANCE.getState() != GameState.LOBI) {
-                            ctx.getSource().sendFailure(Component.literal("⚠ Oyun zaten başladı.").withStyle(ChatFormatting.DARK_RED));
-                            ServerPlayer ep = ctx.getSource().getPlayer();
-                            if (ep != null) LobbyManager.playError(ep);
+                        ServerPlayer player = ctx.getSource().getPlayer();
+                        if (player == null) {
+                            ctx.getSource().sendFailure(Component.literal("⚠ Bu komut sadece oyuncular tarafından kullanılabilir.").withStyle(ChatFormatting.DARK_RED));
                             return 0;
                         }
-                        ServerPlayer player = ctx.getSource().getPlayerOrException();
+                        if (GameStateManager.INSTANCE.getState() != GameState.LOBI) {
+                            ctx.getSource().sendFailure(Component.literal("⚠ Oyun zaten başladı.").withStyle(ChatFormatting.DARK_RED));
+                            LobbyManager.playError(player);
+                            return 0;
+                        }
                         LobbyManager.INSTANCE.joinTeam(player, IntegerArgumentType.getInteger(ctx, "takim"));
                         return 1;
                     }))
@@ -150,13 +115,16 @@ public final class BixisCommand {
             Commands.literal("hazir")
                 .then(Commands.argument("takim", IntegerArgumentType.integer(1, 4))
                     .executes(ctx -> {
-                        if (GameStateManager.INSTANCE.getState() != GameState.LOBI) {
-                            ctx.getSource().sendFailure(Component.literal("⚠ Oyun zaten başladı.").withStyle(ChatFormatting.DARK_RED));
-                            ServerPlayer ep = ctx.getSource().getPlayer();
-                            if (ep != null) LobbyManager.playError(ep);
+                        ServerPlayer player = ctx.getSource().getPlayer();
+                        if (player == null) {
+                            ctx.getSource().sendFailure(Component.literal("⚠ Bu komut sadece oyuncular tarafından kullanılabilir.").withStyle(ChatFormatting.DARK_RED));
                             return 0;
                         }
-                        ServerPlayer player = ctx.getSource().getPlayerOrException();
+                        if (GameStateManager.INSTANCE.getState() != GameState.LOBI) {
+                            ctx.getSource().sendFailure(Component.literal("⚠ Oyun zaten başladı.").withStyle(ChatFormatting.DARK_RED));
+                            LobbyManager.playError(player);
+                            return 0;
+                        }
                         LobbyManager.INSTANCE.setReady(player, IntegerArgumentType.getInteger(ctx, "takim"));
                         return 1;
                     }))
@@ -185,15 +153,18 @@ public final class BixisCommand {
         root.then(
             Commands.literal("finish")
                 .executes(ctx -> {
+                    ServerPlayer player = ctx.getSource().getPlayer();
+                    if (player == null) {
+                        ctx.getSource().sendFailure(Component.literal("⚠ Bu komut bir oyuncu bağlamında çalışmalı (execute as <oyuncu>).").withStyle(ChatFormatting.DARK_RED));
+                        return 0;
+                    }
                     if (GameStateManager.INSTANCE.getState() != GameState.YARIS) {
                         ctx.getSource().sendFailure(Component.literal("⚠ Yarış fazında değilsiniz.").withStyle(ChatFormatting.DARK_RED));
                         return 0;
                     }
-                    ServerPlayer player = ctx.getSource().getPlayerOrException();
                     boolean recorded = RaceManager.INSTANCE.finishPlayer(player);
                     if (!recorded) {
-                        // Zaten bitirmiş — sessizce yoksay (spec gereği)
-                        return 0;
+                        return 0; // Zaten bitirmiş — sessizce yoksay
                     }
                     return 1;
                 })
@@ -234,7 +205,73 @@ public final class BixisCommand {
 
         root.then(buildAdminNode());
 
+        root.then(
+            Commands.literal("help")
+                .executes(ctx -> {
+                    ctx.getSource().sendSuccess(() -> Component.literal("─── Bixis Komutları ───").withStyle(ChatFormatting.GOLD), false);
+                    ctx.getSource().sendSuccess(() -> Component.literal("§7[Oyuncu]§r /bixis takimsec <1-4>"), false);
+                    ctx.getSource().sendSuccess(() -> Component.literal("§7[Oyuncu]§r /bixis hazir <1-4>"), false);
+                    ctx.getSource().sendSuccess(() -> Component.literal("§a[Akış]§r /bixis basla"), false);
+                    ctx.getSource().sendSuccess(() -> Component.literal("§a[Akış]§r /bixis arenaya_gec"), false);
+                    ctx.getSource().sendSuccess(() -> Component.literal("§a[Akış]§r /bixis kapisma_basla"), false);
+                    ctx.getSource().sendSuccess(() -> Component.literal("§a[Akış]§r /bixis sifirla"), false);
+                    ctx.getSource().sendSuccess(() -> Component.literal("§e[Bilgi]§r /bixis durum"), false);
+                    ctx.getSource().sendSuccess(() -> Component.literal("§e[Bilgi]§r /bixis finish"), false);
+                    ctx.getSource().sendSuccess(() -> Component.literal("§c[Admin]§r /bixis admin set race/arena/checkpoint/racetime/pvptime"), false);
+                    ctx.getSource().sendSuccess(() -> Component.literal("§c[Admin]§r /bixis admin list race/arena/checkpoint"), false);
+                    ctx.getSource().sendSuccess(() -> Component.literal("§c[Admin]§r /bixis admin remove/reset/tp/loadmap"), false);
+                    ctx.getSource().sendSuccess(() -> Component.literal("§d[Event]§r /bixis luckyevents vergizamani"), false);
+                    return 1;
+                })
+        );
+
         dispatcher.register(root);
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
+    //  /bixis luckyevents — drops.txt'ten tetiklenen event komutları
+    // ────────────────────────────────────────────────────────────────────────
+
+    private static LiteralArgumentBuilder<CommandSourceStack> buildLuckyEventsNode() {
+        return Commands.literal("luckyevents")
+            .requires(src -> src.hasPermission(2))
+            .then(Commands.literal("vergizamani")
+                .executes(ctx -> {
+                    MinecraftServer server = ctx.getSource().getServer();
+                    List<ServerPlayer> players = server.getPlayerList().getPlayers();
+
+                    Component title = Component.literal("VERGİ ZAMANI")
+                        .withStyle(style -> style.withBold(true).withColor(ChatFormatting.RED));
+                    for (ServerPlayer player : players) {
+                        player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket(10, 70, 20));
+                        player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket(title));
+                    }
+
+                    List<Component> logLines = new ArrayList<>();
+                    for (ServerPlayer player : players) {
+                        int amount = 5 + player.getRandom().nextInt(21);
+                        int removed = removeItems(player, amount);
+                        logLines.add(Component.literal(
+                            player.getName().getString() + " — " + removed + " TL alındı.")
+                            .withStyle(Style.EMPTY.withColor(ChatFormatting.GRAY).withItalic(true)));
+                    }
+
+                    Component mainMsg = Component.literal("Maliye Bakanlığı vergi tahsilatı gerçekleştirdi.")
+                        .withStyle(Style.EMPTY.withColor(ChatFormatting.GRAY).withItalic(true));
+                    for (ServerPlayer player : players) {
+                        player.sendSystemMessage(mainMsg);
+                        for (Component line : logLines) player.sendSystemMessage(line);
+                    }
+
+                    for (ServerPlayer player : players) {
+                        player.connection.send(new ClientboundSoundPacket(
+                            net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT.wrapAsHolder(SoundEvents.WITHER_SPAWN),
+                            SoundSource.MASTER,
+                            player.getX(), player.getY(), player.getZ(),
+                            1.0f, 1.0f, player.getRandom().nextLong()));
+                    }
+                    return 1;
+                }));
     }
 
     // ────────────────────────────────────────────────────────────────────────

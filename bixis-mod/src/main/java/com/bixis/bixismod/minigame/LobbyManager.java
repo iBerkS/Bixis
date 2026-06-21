@@ -18,6 +18,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -269,6 +270,7 @@ public final class LobbyManager {
                 continue;
             }
             player.teleportTo(level, sp.x(), sp.y(), sp.z(), sp.yaw(), 0f);
+            player.setGameMode(GameType.SURVIVAL);
             giveKit(player);
         }
     }
