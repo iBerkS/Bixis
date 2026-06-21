@@ -237,6 +237,33 @@ Package: `minigame/`
 - **Kit içeriği:** iron_pickaxe x1, cooked_beef x10, cobblestone x32
 - **Race Spawn Config:** `config/bixis-race-spawns.json` — `BixisRaceSpawnsConfig`; `setSpawn(teamNum, x, y, z, yaw, dimension)` anında dosyaya yazar; `/bixis admin set race <1-4>` ile kaydedilir
 
+### Yarış Fazı
+`RaceManager.java` — `@Mod.EventBusSubscriber` singleton, MinecraftForge bus'a otomatik kayıtlı
+- **Başlatma:** `LobbyManager.tickCountdown()` tick 60'ta `RaceManager.INSTANCE.start(server)` çağırır; `reset()` da `stop()` çağırır (yarış sırasında sıfırlanınca temizle)
+- **keepInventory:** mod tarafından ayarlanmaz — oyun genelinde manuel `true` tutulur, mod buna karışmaz
+- **Checkpoint takibi:** 5 tick'te bir tüm oyuncular için takımın CP listesi taranır (3 blok yarıçap); `Map<UUID, Integer> lastCheckpoint` (-1 = geçilmedi); sıralı ilerler, aynı tick'te max 1 CP ilerler
+- **Ölüm respawn:** `LivingDeathEvent` → `deathCount` +1; `PlayerRespawnEvent` → `pendingRespawn` set'ine ekler; sonraki tick `processPendingRespawns()` → son CP'ye veya race spawn'a ışınlar + mesaj
+- **Ölüm sayacı:** `Map<UUID, Integer> deathCount`, her `LivingDeathEvent`'te artırılır
+- **Bitiş:** `/bixis finish` → `RaceManager.INSTANCE.finishPlayer(player)` — daha önce bitmişse `false` döner (sessiz yoksay); ilk kez: `finishTimeMs`, `finishOrder`, `teamFinishCount[i]++`; title "Bitirdin!" + subtitle "N. sıradasın" (ayrı paketler: SetTitleText + SetSubtitleText) + sunucu broadcast "Oyuncu yarışı bitirdi! (mm:ss)"
+- **Süre dolunca:** raceTick >= raceTimeSecs*20 → DNF kaydı, "Süre doldu!" title, BELL sesi, `printRaceResults(server)` chat'e, HAZIRLIK_1 state
+- **Sidebar (YARIS fazında):** objective `bixis_race`, başlık "YARIŞ", saniyede bir güncellenir; satırlar: kalan süre "MM:SS", ayraç "─────────", 4 takım bitiriş sayısı; LobbyManager kendi sidebar'ını LOBI dışında zaten gizliyor
+- **Zaman formatı:** `RaceManager.formatTime(ms)` → "mm:ss.cs" (centiseconds)
+- **Config:** `config/bixis-race-settings.json` — `BixisRaceSettingsConfig`; `{"race_time_minutes": 15, "pvp_time_minutes": 3}`; her ikisi de `set racetime`/`set pvptime` ile değiştirilir; default 15dk/3dk
+- **Erken bitiş:** tüm online bixis-takım üyeleri finish edince → `allTeamsFinished()` true → `endRace()` çağrılır (süre dolmadan)
+- **SONUC fazı için getter'lar:** `RaceManager.INSTANCE.getFinishOrder()`, `getFinishTimeMs()`, `getRaceDeathCount()`, `getRacePlayerNames()`
+
+### Hazırlık 1 & 2, Kapışma, Sonuç Fazları
+`ArenaManager.java` — `@Mod.EventBusSubscriber` singleton
+- **`teleportToArena(server)`** — `/bixis arenaya_gec` çağrıldığında; scoreboard takımına göre `BixisArenaSpawnsConfig`'ten arena spawn okunur
+- **`startFight(server)`** — `/bixis kapisma_basla` çağrıldığında; arena'ya re-ışınla + fightCountdownTick=0
+- **Countdown (3-2-1):** tick 0'da her oyuncunun konumu `frozenPositions`/`frozenLevels`'a kaydedilir; her tick `freezeAllPlayers()` çağrılır; tick 60'ta "BAŞLA!" title+subtitle + NOTE_BLOCK_PLING sesi; `pvpTimerTick=0`; GameState → KAPISMA; `playTickSound(players, pitch)` — "3"=0.8f, "2"=1.0f, "1"=1.2f
+- **K/D takibi:** `LivingDeathEvent` KAPISMA fazında; dead instanceof ServerPlayer → `pvpDeathCount+1`; killer instanceof ServerPlayer (dead bloğu içinde) → `pvpKillCount+1`; mob ölümlerinde kill sayılmaz; `pvpTimerTick < 0` ise hiçbiri sayılmaz
+- **Arena respawn:** HAZIRLIK_2 ve KAPISMA fazlarında `PlayerRespawnEvent` → `pendingArenaRespawn` set'ine ekler; sonraki tick `processPendingRespawns()` → takımın arena spawn'ına ışınlar
+- **PVP timer:** pvpTimerTick saniyede bir artar; süre dolunca → `endFight()`: "KAPIŞMA BİTTİ!" title + BELL sesi + GameState → SONUC + chat'e yarış sonuçları + kapışma istatistikleri
+- **KAPIŞMA sidebar (bixis_arena obj):** saniyede bir güncellenir; kalan süre "MM:SS" + ayraç + her oyuncu için "TakımRengi Name: 2K / 1D" (kill sayısına göre sıralı)
+- **SONUÇ chat:** `endFight()` → `RaceManager.INSTANCE.printRaceResults(server)` + `printFightStats(server)`; format: "N. Oyuncu - mm:ss.cs - D Ölüm" / "Oyuncu - Bitirmedi - D Ölüm"; kapışma: "Oyuncu: N Öldürme / N Ölüm"
+- **`reset(server)`** — `/bixis sifirla` LobbyManager.reset() içinden çağırır; tüm state temizlenir, sidebar kaldırılır
+
 ### Admin Harita Kurulum Komutları
 Tüm komutlar `/bixis admin ...` altında, op level 2 gerektirir.
 **Config sınıfları** (package: `config/`):
@@ -252,6 +279,13 @@ Tüm komutlar `/bixis admin ...` altında, op level 2 gerektirir.
 /bixis admin set race <1-4>        → oyuncu konumunu race spawn kaydeder
 /bixis admin set arena <1-4>       → oyuncu konumunu arena spawn kaydeder
 /bixis admin set checkpoint <1-4>  → oyuncu konumunu takımın CP listesine ekler (sıra no döner)
+/bixis admin set racetime <1-60>   → yarış süresini dakika cinsinden ayarlar (default 15)
+/bixis admin set pvptime <1-60>    → PVP (kapışma) süresini dakika cinsinden ayarlar (default 3)
+
+/bixis finish                      → oyuncunun yarışı bitirdiğini kaydeder (pressure plate bağlantısı için)
+
+/bixis arenaya_gec                 → HAZIRLIK_1 → oyuncuları arenaya ışınlar → HAZIRLIK_2 (op 2)
+/bixis kapisma_basla               → HAZIRLIK_2 → arenaya re-ışınla + 3-2-1 countdown + KAPISMA (op 2)
 
 /bixis admin list race             → tüm 4 takımın race spawn'larını yazar
 /bixis admin list arena            → tüm 4 takımın arena spawn'larını yazar

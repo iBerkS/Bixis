@@ -87,6 +87,9 @@ public final class LobbyManager {
      */
     public void reset(MinecraftServer server) {
         java.util.Arrays.fill(readyFlags, false);
+        RaceManager.INSTANCE.stop(server); // yarış sırasında sıfırlanırsa race'i durdur
+        ArenaManager.INSTANCE.reset(server); // arena/kapışma/sonuç sırasında sıfırlanırsa temizle
+        countdownTick = -1;
         setupTeams(server);
         updateSidebar(server);
     }
@@ -222,20 +225,21 @@ public final class LobbyManager {
 
         if (countdownTick == 0) {
             sendTitleAll(players, "3", ChatFormatting.YELLOW);
-            playTickSound(players);
+            playTickSound(players, 0.8f);
         } else if (countdownTick == 20) {
             sendTitleAll(players, "2", ChatFormatting.YELLOW);
-            playTickSound(players);
+            playTickSound(players, 1.0f);
         } else if (countdownTick == 40) {
             sendTitleAll(players, "1", ChatFormatting.RED);
-            playTickSound(players);
+            playTickSound(players, 1.2f);
         } else if (countdownTick == 60) {
             teleportAndKit(server, players);
             sendStartTitle(players);
             for (ServerPlayer p : players) {
-                p.playNotifySound(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.MASTER, 1.0f, 1.0f);
+                p.playNotifySound(SoundEvents.NOTE_BLOCK_PLING.value(), SoundSource.MASTER, 1.0f, 1.0f);
             }
             GameStateManager.INSTANCE.setState(GameState.YARIS);
+            RaceManager.INSTANCE.start(server);
             countdownTick = -1; // sekans bitti, bir daha artırılmasın
         }
     }
@@ -374,10 +378,10 @@ public final class LobbyManager {
         }
     }
 
-    /** Geri sayım tik sesi — 3/2/1 title'larında. */
-    private static void playTickSound(List<ServerPlayer> players) {
+    /** Geri sayım tik sesi — 3/2/1 title'larında; pitch artar (0.8→1.0→1.2). */
+    private static void playTickSound(List<ServerPlayer> players, float pitch) {
         for (ServerPlayer p : players) {
-            p.playNotifySound(SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.MASTER, 1.0f, 1.0f);
+            p.playNotifySound(SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.MASTER, 1.0f, pitch);
         }
     }
 

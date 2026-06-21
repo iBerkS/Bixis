@@ -1,11 +1,14 @@
 package com.bixis.bixismod.command;
 
 import com.bixis.bixismod.config.BixisArenaSpawnsConfig;
+import com.bixis.bixismod.config.BixisRaceSettingsConfig;
+import com.bixis.bixismod.minigame.ArenaManager;
 import com.bixis.bixismod.config.BixisCheckpointsConfig;
 import com.bixis.bixismod.config.BixisRaceSpawnsConfig;
 import com.bixis.bixismod.config.SpawnPoint;
 import com.bixis.bixismod.item.BixisItems;
 import com.bixis.bixismod.minigame.GameState;
+import com.bixis.bixismod.minigame.RaceManager;
 import com.bixis.bixismod.minigame.GameStateManager;
 import com.bixis.bixismod.minigame.LobbyManager;
 import com.google.gson.Gson;
@@ -179,6 +182,56 @@ public final class BixisCommand {
                 })
         );
 
+        root.then(
+            Commands.literal("finish")
+                .executes(ctx -> {
+                    if (GameStateManager.INSTANCE.getState() != GameState.YARIS) {
+                        ctx.getSource().sendFailure(Component.literal("⚠ Yarış fazında değilsiniz.").withStyle(ChatFormatting.DARK_RED));
+                        return 0;
+                    }
+                    ServerPlayer player = ctx.getSource().getPlayerOrException();
+                    boolean recorded = RaceManager.INSTANCE.finishPlayer(player);
+                    if (!recorded) {
+                        // Zaten bitirmiş — sessizce yoksay (spec gereği)
+                        return 0;
+                    }
+                    return 1;
+                })
+        );
+
+        root.then(
+            Commands.literal("arenaya_gec")
+                .requires(src -> src.hasPermission(2))
+                .executes(ctx -> {
+                    if (GameStateManager.INSTANCE.getState() != GameState.HAZIRLIK_1) {
+                        ctx.getSource().sendFailure(Component.literal("⚠ Oyun Hazırlık 1 fazında değil.").withStyle(ChatFormatting.DARK_RED));
+                        return 0;
+                    }
+                    MinecraftServer srv = ctx.getSource().getServer();
+                    Component broadcast = Component.literal("Hazırlık dönemi bitti, arenaya ışınlanıyorsunuz.")
+                        .withStyle(ChatFormatting.YELLOW);
+                    for (ServerPlayer p : srv.getPlayerList().getPlayers()) p.sendSystemMessage(broadcast);
+                    ArenaManager.INSTANCE.teleportToArena(srv);
+                    GameStateManager.INSTANCE.setState(GameState.HAZIRLIK_2);
+                    ctx.getSource().sendSuccess(() -> Component.literal("[Bixis] Arenaya geçildi → HAZIRLIK_2."), true);
+                    return 1;
+                })
+        );
+
+        root.then(
+            Commands.literal("kapisma_basla")
+                .requires(src -> src.hasPermission(2))
+                .executes(ctx -> {
+                    if (GameStateManager.INSTANCE.getState() != GameState.HAZIRLIK_2) {
+                        ctx.getSource().sendFailure(Component.literal("⚠ Oyun Hazırlık 2 fazında değil.").withStyle(ChatFormatting.DARK_RED));
+                        return 0;
+                    }
+                    ArenaManager.INSTANCE.startFight(ctx.getSource().getServer());
+                    ctx.getSource().sendSuccess(() -> Component.literal("[Bixis] Kapışma geri sayımı başladı."), true);
+                    return 1;
+                })
+        );
+
         root.then(buildAdminNode());
 
         dispatcher.register(root);
@@ -236,6 +289,24 @@ public final class BixisCommand {
                         ctx.getSource().sendSuccess(() -> Component.literal(String.format(
                             "[Bixis] Takım %d checkpoint #%d kaydedildi: %s",
                             t, fi, formatCoords(p.getX(), p.getY(), p.getZ(), p.getYRot(), dimOf(p)))), true);
+                        return 1;
+                    })))
+            .then(Commands.literal("racetime")
+                .then(Commands.argument("dakika", IntegerArgumentType.integer(1, 60))
+                    .executes(ctx -> {
+                        int mins = IntegerArgumentType.getInteger(ctx, "dakika");
+                        BixisRaceSettingsConfig.setRaceTimeMins(mins);
+                        ctx.getSource().sendSuccess(() -> Component.literal(
+                            "[Bixis] Yarış süresi " + mins + " dakika olarak ayarlandı."), true);
+                        return 1;
+                    })))
+            .then(Commands.literal("pvptime")
+                .then(Commands.argument("dakika", IntegerArgumentType.integer(1, 60))
+                    .executes(ctx -> {
+                        int mins = IntegerArgumentType.getInteger(ctx, "dakika");
+                        BixisRaceSettingsConfig.setPvpTimeMins(mins);
+                        ctx.getSource().sendSuccess(() -> Component.literal(
+                            "[Bixis] PVP süresi " + mins + " dakika olarak ayarlandı."), true);
                         return 1;
                     })));
     }

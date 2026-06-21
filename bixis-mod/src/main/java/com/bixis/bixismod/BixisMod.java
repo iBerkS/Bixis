@@ -2,6 +2,7 @@ package com.bixis.bixismod;
 
 import com.bixis.bixismod.command.BixisCommand;
 import com.bixis.bixismod.config.BixisArenaSpawnsConfig;
+import com.bixis.bixismod.config.BixisRaceSettingsConfig;
 import com.bixis.bixismod.config.BixisCheckpointsConfig;
 import com.bixis.bixismod.config.BixisRaceSpawnsConfig;
 import com.bixis.bixismod.config.BixisRatesConfig;
@@ -74,6 +75,7 @@ public class BixisMod {
             BixisRaceSpawnsConfig.init(FMLPaths.CONFIGDIR.get());
             BixisArenaSpawnsConfig.init(FMLPaths.CONFIGDIR.get());
             BixisCheckpointsConfig.init(FMLPaths.CONFIGDIR.get());
+            BixisRaceSettingsConfig.init(FMLPaths.CONFIGDIR.get());
         });
     }
 
