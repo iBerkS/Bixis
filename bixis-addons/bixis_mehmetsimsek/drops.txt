@@ -319,6 +319,6 @@ type=entity,ID=bixis:recep_ivedi@luck=-4@chance=1.0
 /Turk Polisi spawn
 type=entity,ID=bixis:turk_polisi,amount=#rand(1,4),posOffset=#circleOffset(3)@luck=-2@chance=0.5
 
-/Vergi Zamani - /bixis vergizamani komutu
-type=command,ID="/bixis vergizamani"@luck=-4@chance=0.5
+/Vergi Zamani - /bixis luckyevents vergizamani komutu
+type=command,ID="/bixis luckyevents vergizamani"@luck=-4@chance=0.5
 
