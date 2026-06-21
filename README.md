@@ -85,13 +85,14 @@ Yeni bir Lucky Block teması eklemek istersen `!bixis_kadikoybogasi/` gibi bir a
 
 Her temanın kendine özgü lucky/unlucky eventleri ve oranları vardır. Detaylı liste için ilgili temanın klasöründeki `DROP_RATES.md` dosyasına bakabilirsin:
 
-- [Kadıköy Boğası — Drop Oranları](bixis-addons/bixis_kadikoybogasi/DROP_RATES.md)
+- [Kadıköy Boğası — Drop Oranları](bixis-addons/!bixis_kadikoybogasi/DROP_RATES.md)
 - [Mehmet Şimşek — Drop Oranları](bixis-addons/bixis_mehmetsimsek/DROP_RATES.md)
 
 ---
 
 ## 🚧 Yol Haritası
 
+- 🗹 Minigame otomasyonu ()
 - [ ] Daha fazla Lucky Block teması/addon'u
 - [ ] Boss savaşları (Cataclysm entegrasyonu)
 - [ ] Daha fazla event

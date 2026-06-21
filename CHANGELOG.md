@@ -1,5 +1,77 @@
 # Changelog
 
+## v1.0.1 - Minigame Sistemi
+
+### Bixis Mod
+
+#### Minigame — Durum Makinesi
+Sunucu taraflı bir oyun akış sistemi eklendi. Oyun yedi fazdan oluşur:
+**Lobi → Geri Sayım → Yarış → Hazırlık 1 → Hazırlık 2 → Kapışma → Sonuç**
+
+Her faz, önceki fazın tamamlanmasıyla otomatik ya da admin komutuyla tetiklenir.
+
+#### Minigame — Lobi Fazı
+- **Takım Seçimi** — Oyuncular `/bixis takimsec <1-4>` ile dört takımdan birine katılır. Takımlar kırmızı, yeşil, sarı ve mavi renkleriyle gösterilir.
+- **Hazır Bildirimi** — `/bixis hazir <1-4>` komutuyla takım hazır olarak işaretlenir. Dolu olan tüm takımlar hazır olduğunda `/bixis basla` kullanılabilir.
+- **Lobi Scoreboard** — Ekranın sağ tarafında her takımın oyuncu sayısı ve hazır durumunu gösteren canlı bir tablo görünür.
+
+#### Minigame — Geri Sayım Fazı
+- `/bixis basla` komutundan sonra 3-2-1 geri sayım başlar.
+- Geri sayım bitince her oyuncu kendi takımının yarış başlangıç noktasına ışınlanır, Survival moduna alınır ve başlangıç kiti (demir kazma, biftek ve kırıktaş) otomatik verilir.
+
+#### Minigame — Yarış Fazı
+- **Checkpoint Sistemi** — Parkurda belirlenen kontrol noktaları; oyuncu ölünce son geçtiği checkpoint'e ışınlanır.
+- **Bitiş Çizgisi** — Parkurun sonundaki basınç plakası `/bixis finish` komutunu tetikler; bitiş süresi ve anlık sıra ekranda gösterilir, sunucuya duyurulur.
+- **Ölüm Sayacı** — Her oyuncunun kaç kez öldüğü kaydedilir.
+- **Yarış Scoreboard** — Ekranın sağ tarafında kalan süre ve takım bazlı bitiş sayıları gösterilir.
+- **Süre Dolunca** — 15 dakika (ayarlanabilir) sonunda yarış otomatik biter; sonuçlar chat'e yazdırılır ve Hazırlık 1 fazına geçilir.
+
+#### Minigame — Hazırlık 1 Fazı
+- Yarış sona erdikten sonra oyuncular race haritasında bekler: shop'tan alışveriş, envanter düzenleme.
+- Admin `/bixis arenaya_gec` komutunu çalıştırınca herkes arena haritasına ışınlanır.
+
+#### Minigame — Hazırlık 2 Fazı
+- Oyuncular arenadadır; admin boss'ları manuel olarak belirleyip spawnlar.
+- Bu fazda ölen oyuncu kendi takımının arena spawn noktasına ışınlanır.
+
+#### Minigame — Kapışma (PVP) Fazı
+- `/bixis kapisma_basla` komutuyla 3-2-1 geri sayım başlar; geri sayım sırasında oyuncuların pozisyonu kilitlenir.
+- Geri sayım bitince serbest PVP başlar; kill/death sayaçları tutulur (sadece oyuncu-oyuncu öldürmeleri kill sayar).
+- Kapışma Scoreboard — kalan süre, her oyuncunun kill/death sayısı anlık olarak görünür.
+- Süre dolunca kapışma biter; yarış ve kapışma sonuçları chat'e yazdırılır.
+
+#### Minigame — Sonuç Fazı
+- Kapışma sona erdikten sonra chat'e iki sonuç bloğu gönderilir:
+  - **Yarış Sonuçları** — bitiş sırası, süre ve ölüm sayısı
+  - **Kapışma Sonuçları** — kill / ölüm sayısı
+- `/bixis sifirla` ile her şey Lobi'ye döner, yeni oturum başlayabilir.
+
+#### Admin Harita Kurulum Komutları
+Video çekiminden önce haritayı bir kez ayarlamak için kullanılır; config dosyalarına kaydedilir.
+
+- `/bixis admin set race <1-4>` — Yarış başlangıç noktasını kaydeder
+- `/bixis admin set arena <1-4>` — Arena spawn noktasını kaydeder
+- `/bixis admin set checkpoint <1-4>` — Takımın checkpoint listesine yeni nokta ekler
+- `/bixis admin set racetime <dakika>` — Yarış süresini ayarlar (varsayılan: 15 dk)
+- `/bixis admin set pvptime <dakika>` — Kapışma süresini ayarlar (varsayılan: 3 dk)
+- `/bixis admin list race/arena/checkpoint` — Kayıtlı noktaları listeler
+- `/bixis admin remove checkpoint <takım> <sıra>` — Checkpoint siler
+- `/bixis admin reset all` — Tüm harita kayıtlarını temizler
+- `/bixis admin tp race/arena/checkpoint` — Admin'i kayıtlı noktaya ışınlar
+- `/bixis admin loadmap <isim>` — `config/maps/<isim>/` klasöründen hazır harita config'ini yükler
+
+#### Diğer Yeni Komutlar
+- `/bixis help` — Tüm komutları kategorili olarak listeler
+- `/bixis durum` — Mevcut oyun fazını gösterir
+- `/bixis luckyevents vergizamani` — Lucky Block'tan tetiklenen Vergi Zamanı eventi (eski `/bixis vergizamani` kaldırıldı)
+- `/bixis finish` — Bitiş çizgisindeki command block tarafından tetiklenir
+
+#### Teknik
+- Command block desteği: tüm komutlar command block üzerinden (`execute as <oyuncu> run ...` ile) çalışacak şekilde düzenlendi.
+- Harita config dosyaları: `config/bixis-race-spawns.json`, `config/bixis-arena-spawns.json`, `config/bixis-checkpoints.json`, `config/bixis-race-settings.json`
+
+---
+
 ## v1.0.0 - İlk Sürüm
 
 ### Bixis Mod
